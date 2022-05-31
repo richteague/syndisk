@@ -69,8 +69,9 @@ class simulationcube(imagecube):
 
         if bmaj is not None:
             bmin = bmaj if bmin is None else bmin
-            beam = self._beamkernel(bmaj, bmin, bpa)
             dpix = bmin / 5.0 if dpix is None else dpix
+            self.dpix_sc = dpix #rescaled pixel size, needed for _beamkernel
+            beam = self._beamkernel(bmaj, bmin, bpa)
             if self.verbose and dpix * 5.0 > bmaj:
                 print("WARNING: Specified `dpix` does not sample bmin well.")
         else:
@@ -81,7 +82,7 @@ class simulationcube(imagecube):
         # number of pixels. If this is is larger than the rescaled image, raise
         # a warning and continue.
 
-        dpix = self.dpix if dpix is None else dpix
+        #dpix = self.dpix if dpix is None else dpix #no longer needed
         npix = self.nxpix if npix is None else npix
         data = self._rescaled_data_spatial(dpix=dpix, npix=npix)
         npix = data.shape[-1]
@@ -158,9 +159,9 @@ class simulationcube(imagecube):
                 direction. Defaults to 0 degrees.
         """
         bmin = bmaj if bmin is None else bmin
-        bmaj = bmaj / self.dpix / 2.0 / np.sqrt(2.0 * np.log(2.0))
-        bmin = bmin / self.dpix / 2.0 / np.sqrt(2.0 * np.log(2.0))
-        return Gaussian2DKernel(bmin, bmaj, np.radians(bpa))
+        bmaj = bmaj / self.dpix_sc / 2.0 / np.sqrt(2.0 * np.log(2.0))
+        bmin = bmin / self.dpix_sc / 2.0 / np.sqrt(2.0 * np.log(2.0))
+        return Gaussian2DKernel(bmin, bmaj, np.radians(90+bpa)) #bpa corrected to N axis
 
     def _new_velax(self, chan, nchan, vcent):
         """
