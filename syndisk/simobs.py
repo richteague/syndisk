@@ -30,7 +30,8 @@ class simulationcube(imagecube):
         super().__init__(path=path, **kwargs)
 
     def synthetic_ALMA(self, bmaj=None, bmin=None, bpa=0.0, rms=None,
-                       chan=None, nchan=None, vcent=None, dpix=None, npix=None,
+                       chan=None, nchan=None, vcent=None,
+                       dpix=None, npix=None, rescale=5.0,
                        spectral_response=None, filename=None, overwrite=False):
         """
         Generate synthetic ALMA observations by convolving the data spatially
@@ -48,9 +49,8 @@ class simulationcube(imagecube):
             nchan (optional[int]): Number of channels of the resulting data. If
                 this would extend beyond the attached velocity then these edge
                 channels are ignored.
-            rescale (optional[int]): Rescaling factor for the pixels. If
-                ``rescale='auto'`` then the pixels will be rescaled so there's
-                5 pixels per bmin.
+            rescale (optional[float]): Rescaling factor for the pixels. Defaults to 5 
+                pixels per bmin. If rescale=0.0, dpix is read from input data
             spectral_response (optional[str]): Type of spectral response to
                 include. ``'hanning'`` will include a triangle kernel, while
                 ``'averageX'``, where ``'X'`` is a number will use a simple
@@ -69,10 +69,13 @@ class simulationcube(imagecube):
 
         if bmaj is not None:
             bmin = bmaj if bmin is None else bmin
-            dpix = bmin / 5.0 if dpix is None else dpix
+            if rescale==0:
+                dpix = self.dpix if dpix is None else dpix
+            else:
+                dpix = bmin / rescale if dpix is None else dpix
             self.dpix_sc = dpix #rescaled pixel size, needed for _beamkernel
             beam = self._beamkernel(bmaj, bmin, bpa)
-            if self.verbose and dpix * 5.0 > bmaj:
+            if self.verbose and dpix * rescale > bmaj:
                 print("WARNING: Specified `dpix` does not sample bmin well.")
         else:
             beam = False
